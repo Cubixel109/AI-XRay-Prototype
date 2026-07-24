@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{{ project.name }} | {{ project.subtitle }}</title>
+<meta content="An educational AI X-ray analysis prototype workstation, built for a science exhibition. Not for medical diagnosis." name="description"/>
+<!-- Fonts: Inter for interface text, IBM Plex Sans for headings, IBM Plex Mono for data readouts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body>
+<!-- =========================================================
+       HEADER / TOP APPLICATION BAR
+  ========================================================== -->
+<header class="app-header">
+<div class="app-header__inner">
+<div class="brand">
+<span aria-hidden="true" class="brand__mark">
+<svg height="34" viewbox="0 0 40 40" width="34">
+<circle cx="20" cy="20" fill="none" r="18" stroke="currentColor" stroke-width="2"></circle>
+<circle cx="20" cy="20" fill="none" r="11" stroke="currentColor" stroke-width="2"></circle>
+<line stroke="currentColor" stroke-width="2" x1="20" x2="20" y1="2" y2="9"></line>
+<line stroke="currentColor" stroke-width="2" x1="20" x2="20" y1="31" y2="38"></line>
+<line stroke="currentColor" stroke-width="2" x1="2" x2="9" y1="20" y2="20"></line>
+<line stroke="currentColor" stroke-width="2" x1="31" x2="38" y1="20" y2="20"></line>
+<circle cx="20" cy="20" fill="currentColor" r="3.2"></circle>
+</svg>
+</span>
+<div class="brand__text">
+<span class="brand__name">{{ project.name }}</span>
+<span class="brand__subtitle">{{ project.subtitle }}</span>
+</div>
+</div>
+<div class="header__badges">
+<span class="badge badge--edu">
+<svg aria-hidden="true" fill="none" height="14" viewbox="0 0 24 24" width="14"><path d="M12 3 2 8l10 5 10-5-10-5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path><path d="M6 11v5c0 1.3 2.7 3 6 3s6-1.7 6-3v-5" stroke="currentColor" stroke-width="1.6"></path></svg>
+          {{ project.badge }}
+        </span>
+<span class="status-indicator" title="Demo system status">
+<span aria-hidden="true" class="status-indicator__dot"></span>
+          System Online
+        </span>
+</div>
+</div>
+</header>
+<!-- =========================================================
+       DISCLAIMER STRIP
+  ========================================================== -->
+<div class="disclaimer-strip">
+<svg aria-hidden="true" fill="none" height="16" viewbox="0 0 24 24" width="16"><path d="M12 9v4m0 4h.01M10.3 3.9 2.5 17.2A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path></svg>
+<span><strong>Educational Prototype</strong> — {{ project.disclaimer }}. All imagery, scores, and readings on this page are simulated placeholders for demonstration only.</span>
+</div>
+<main>
+<!-- =========================================================
+         HERO / WORKSTATION VIEWER
+    ========================================================== -->
+<section aria-labelledby="hero-heading" class="hero fade-in">
+<div class="hero__intro">
+<p class="eyebrow">Radiology Workstation · Demo Session</p>
+<h1 id="hero-heading">AI-Assisted X-Ray Review Console</h1>
+<p class="hero__lede">
+          A prototype interface modeled on clinical imaging workstations, built to
+          demonstrate how a capture-analyze-display pipeline could look in a real
+          radiology setting. This exhibit does not perform genuine medical analysis.
+        </p>
+</div>
+<div class="workstation">
+<!-- Imaging viewport -->
+<div class="viewer">
+<div class="viewer__topbar">
+<span class="viewer__tag">STUDY: {{ result.study|upper }}</span>
+<span class="viewer__tag">ID: {{ result.patient_id }}</span>
+<span class="viewer__tag viewer__tag--live">
+<span aria-hidden="true" class="dot-pulse"></span> LIVE VIEWER
+            </span>
+</div>
+<div class="viewer__stage" id="viewerStage">
+<!-- Orientation markers, as seen on real DICOM viewers -->
+<span class="orientation orientation--l">L</span>
+<span class="orientation orientation--r">R</span>
+<!-- Corner brackets -->
+<span aria-hidden="true" class="corner corner--tl"></span>
+<span aria-hidden="true" class="corner corner--tr"></span>
+<span aria-hidden="true" class="corner corner--bl"></span>
+<span aria-hidden="true" class="corner corner--br"></span>
+<!-- Placeholder chest radiograph illustration (generated shapes only, no real scan) -->
+<video 
+    id="liveFeed" 
+    class="placeholder-scan"
+    autoplay 
+    playsinline>
+</video>
+<canvas id="cameraCanvas" hidden></canvas>
+<!-- Animated scan line -->
+<div aria-hidden="true" class="scan-line"></div>
+<!-- Reticle crosshair -->
+<div aria-hidden="true" class="reticle"></div>
+</div>
+<div class="viewer__hud">
+<span>WW: 2048</span>
+<span>WL: 1024</span>
+<span>ZOOM: 100%</span>
+<span>ROTATION: 0°</span>
+</div>
+</div>
+<!-- Action + Results column -->
+<div class="console">
+<div class="card action-panel">
+<h2 class="card__title">Actions</h2>
+<div class="action-panel__buttons">
+<button class="btn btn--primary" id="captureBtn" type="button">
+<svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path><circle cx="12" cy="14" r="3.4" stroke="currentColor" stroke-width="1.6"></circle></svg>
+                Capture Image
+              </button>
+<button class="btn btn--secondary" id="uploadBtn" type="button">
+<svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 15V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"></path></svg>
+                Upload X-Ray
+              </button>
+<input accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden id="fileInput" type="file"/>
+<button class="btn btn--accent" id="analyzeBtn" type="button">
+<span class="btn__spinner" hidden="" id="analyzeSpinner"></span>
+<span id="analyzeLabel">
+<svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.5-6.5-2.1 2.1M8.6 15.4l-2.1 2.1m0-11 2.1 2.1m8.8 8.8-2.1-2.1" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"></path><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"></circle></svg>
+                  Analyze
+                </span>
+</button>
+</div>
+<p class="action-panel__note" id="actionNote">Capture uses the connected USB camera. Upload accepts JPG or PNG files (max 10MB) and AI analysis runs automatically once the image is saved.</p>
+</div>
+<div class="card results-card" id="resultsCard">
+<div class="card__header-row">
+<h2 class="card__title">Analysis Results</h2>
+<span class="chip chip--{{ result.risk_class }}" id="riskChip">{{ result.risk_level }} Risk</span>
+</div>
+<dl class="results-grid">
+<div class="results-grid__item">
+<dt>Prediction</dt>
+<dd id="predictionValue">{{ result.prediction }}</dd>
+</div>
+<div class="results-grid__item">
+<dt>Confidence</dt>
+<dd class="mono" id="confidenceValue">{{ result.confidence }}</dd>
+</div>
+<div class="results-grid__item">
+<dt>Risk Level</dt>
+<dd id="riskValue">{{ result.risk_level }}</dd>
+</div>
+<div class="results-grid__item">
+<dt>Scan Time</dt>
+<dd class="mono" id="scanTimeValue">{{ result.scan_time }}</dd>
+</div>
+</dl>
+<div aria-hidden="true" class="confidence-bar">
+<div class="confidence-bar__fill" id="confidenceBarFill" style="width: {{ result.confidence }};"></div>
+</div>
+<p class="results-card__footnote">AI-assisted analysis for educational demonstration. Results should not be used as medical diagnosis.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- =========================================================
+         SYSTEM INFORMATION
+    ========================================================== -->
+<section aria-labelledby="system-heading" class="section system-section fade-in">
+<div class="section__header">
+<p class="eyebrow">Diagnostics</p>
+<h2 id="system-heading">System Information</h2>
+</div>
+<div class="system-grid">
+        {% for item in system_info %}
+        <div class="system-tile">
+<span class="system-tile__label">{{ item.label }}</span>
+<span class="system-tile__value {% if item.state %}system-tile__value--{{ item.state }}{% endif %}">
+            {% if item.state %}<span aria-hidden="true" class="system-tile__dot"></span>{% endif %}
+            {{ item.value }}
+          </span>
+</div>
+        {% endfor %}
+      </div>
+</section>
+<!-- =========================================================
+         HOW IT WORKS
+    ========================================================== -->
+<section aria-labelledby="workflow-heading" class="section workflow-section fade-in">
+<div class="section__header">
+<p class="eyebrow">Process</p>
+<h2 id="workflow-heading">How the Prototype Works</h2>
+<p class="section__lede">A simplified, three-stage pipeline mirrors how a production imaging tool might be structured.</p>
+</div>
+<div class="workflow-grid">
+        {% for step in workflow_steps %}
+        <div class="workflow-card">
+<span class="workflow-card__number">{{ step.number }}</span>
+<div aria-hidden="true" class="workflow-card__icon">
+            {% if step.icon == 'capture' %}
+              <svg fill="none" height="26" viewbox="0 0 24 24" width="26"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path><circle cx="12" cy="14" r="3.4" stroke="currentColor" stroke-width="1.6"></circle></svg>
+            {% elif step.icon == 'analysis' %}
+              <svg fill="none" height="26" viewbox="0 0 24 24" width="26"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.6"></circle><path d="m20 20-4.3-4.3" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"></path><path d="M8 11h6M11 8v6" stroke="currentColor" stroke-width="1.4"></path></svg>
+            {% else %}
+              <svg fill="none" height="26" viewbox="0 0 24 24" width="26"><rect height="13" rx="1.5" stroke="currentColor" stroke-width="1.6" width="17" x="3.5" y="4"></rect><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"></path><path d="M7 13.5 10 10l2.5 2.5L17 8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path></svg>
+            {% endif %}
+          </div>
+<h3>{{ step.title }}</h3>
+<p>{{ step.description }}</p>
+</div>
+        {% endfor %}
+      </div>
+</section>
+<!-- =========================================================
+         FEATURES
+    ========================================================== -->
+<section aria-labelledby="features-heading" class="section features-section fade-in">
+<div class="section__header">
+<p class="eyebrow">Overview</p>
+<h2 id="features-heading">Prototype Features</h2>
+</div>
+<div class="features-grid">
+        {% for feature in features %}
+        <div class="feature-card">
+<span aria-hidden="true" class="feature-card__check">
+<svg fill="none" height="16" viewbox="0 0 24 24" width="16"><path d="m5 13 4 4 10-10" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"></path></svg>
+</span>
+<h3>{{ feature.title }}</h3>
+<p>{{ feature.description }}</p>
+</div>
+        {% endfor %}
+      </div>
+</section>
+</main>
+<!-- =========================================================
+       FOOTER
+  ========================================================== -->
+<footer class="app-footer">
+<div class="app-footer__inner">
+<div class="app-footer__disclaimer">
+<strong>{{ project.badge }}.</strong> {{ project.disclaimer }}. This project
+        was built for a science exhibition to explore how AI-assisted tools could be
+        presented in a clinical-style interface. It does not process real patient data
+        and must never be used to make medical decisions.
+      </div>
+<div class="app-footer__meta">
+<span>{{ project.name }} · {{ project.subtitle }}</span>
+<span>Built with Flask</span>
+</div>
+</div>
+</footer>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

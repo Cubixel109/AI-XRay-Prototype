@@ -62,12 +62,15 @@ def analyze_image(image_path):
         )
 
 
+
         # Prediction
+        print("5. Preprocessed")
+
         prediction = float(
-            model.predict(img_array)[0][0]
+            model(img_array, training=False).numpy()[0][0]
         )
 
-
+        print("6. Prediction finished")
         print("RAW MODEL OUTPUT:", prediction)
 
 

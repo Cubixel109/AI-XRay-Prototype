@@ -12,12 +12,14 @@ Flask application:
 - AI model integration through ai_model.py
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file
 from PIL import Image
+import io
 import time
 import os
 
 from ai_model import analyze_image
+from report_generator import generate_report_id, generate_report_pdf
 
 
 app = Flask(__name__)
@@ -45,6 +47,17 @@ SCAN_RESULT = {
     "patient_id": "DEMO-EXHIBIT-001",
 }
 
+
+# ---------------------------------------------------------------------------
+# LATEST ANALYSIS CACHE
+#
+# /generate_report needs the prediction/confidence/scan-time from the
+# most recent successful analysis so it can build a PDF without
+# re-running the model. _build_analysis_response() is the only place
+# that populates this, so there is exactly one place where "the
+# latest result" is defined.
+# ---------------------------------------------------------------------------
+LAST_ANALYSIS = {}
 
 SYSTEM_INFO = [
     {
@@ -174,6 +187,16 @@ def _build_analysis_response(start_time):
     )
 
     confidence = result["confidence"]
+
+    # Cache the fields the PDF report needs. This is intentionally the
+    # only place LAST_ANALYSIS is written, so /generate_report always
+    # reflects exactly the result the user just saw on screen.
+    LAST_ANALYSIS.update({
+        "prediction": result["prediction"],
+        "confidence": confidence,
+        "scan_time": scan_time,
+        "image_path": CAPTURE_PATH,
+    })
 
     return jsonify({
 
@@ -324,6 +347,45 @@ def analyze():
     start_time = time.time()
 
     return _build_analysis_response(start_time)
+
+
+# ---------------------------------------------------------------------------
+# PDF REPORT GENERATION
+#
+# Builds a PDF for the most recent successful analysis (cached in
+# LAST_ANALYSIS by _build_analysis_response) and returns it as a
+# downloadable file. All PDF layout/formatting lives in
+# report_generator.py -- this route only gathers data and hands it
+# off, so there is no report-formatting logic duplicated here.
+# ---------------------------------------------------------------------------
+
+@app.route("/generate_report", methods=["POST"])
+def generate_report():
+
+    if not LAST_ANALYSIS:
+
+        return jsonify({
+            "status": "error",
+            "message": "No analysis has been run yet. Capture, upload, or "
+                       "analyze an X-ray before generating a report."
+        }), 400
+
+    report_id = generate_report_id()
+
+    pdf_bytes = generate_report_pdf(
+        report_id=report_id,
+        prediction=LAST_ANALYSIS["prediction"],
+        confidence=LAST_ANALYSIS["confidence"],
+        analysis_time=LAST_ANALYSIS["scan_time"],
+        image_path=LAST_ANALYSIS.get("image_path"),
+    )
+
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"ScanSense_Report_{report_id}.pdf",
+    )
 
 
 

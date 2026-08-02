@@ -551,6 +551,11 @@ svg { display: block; }
   transition: width 900ms ease;
 }
 
+.results-card__report-btn {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
 .results-card__footnote {
   font-size: 0.74rem;
   color: var(--color-ink-faint);

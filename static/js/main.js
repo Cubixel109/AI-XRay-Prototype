@@ -58,6 +58,10 @@
   const uploadBtn = document.getElementById("uploadBtn");
   const fileInput = document.getElementById("fileInput");
 
+  const generateReportBtn = document.getElementById("generateReportBtn");
+  const generateReportSpinner = document.getElementById("generateReportSpinner");
+  const generateReportLabel = document.getElementById("generateReportLabel");
+
   const predictionValue = document.getElementById("predictionValue");
   const confidenceValue = document.getElementById("confidenceValue");
   const riskValue = document.getElementById("riskValue");
@@ -136,6 +140,28 @@
       scanTimeValue.textContent = elapsedSeconds.toFixed(2) + "s";
 
     }
+
+
+    // A report can only ever be generated for an analysis that has
+    // actually run, so the button stays disabled until we get here.
+    if (generateReportBtn) generateReportBtn.disabled = false;
+
+  }
+
+
+  // -----------------------------------------------------------
+  // Generate Report button busy-state helper (kept separate from
+  // setBusy() above: downloading a report doesn't need to lock the
+  // Capture/Upload/Analyze buttons, it only needs to lock itself).
+  // -----------------------------------------------------------
+
+  function setReportBusy(isBusy) {
+
+    if (generateReportBtn) generateReportBtn.disabled = isBusy;
+
+    if (generateReportSpinner) generateReportSpinner.hidden = !isBusy;
+
+    if (generateReportLabel) generateReportLabel.style.opacity = isBusy ? "0.5" : "1";
 
   }
 
@@ -293,6 +319,96 @@ startCamera();
     analyzeBtn.addEventListener(
       "click",
       runAIAnalysis
+    );
+
+  }
+
+
+  // -----------------------------------------------------------
+  // Generate Report
+  //
+  // Calls /generate_report, which builds a PDF from whichever
+  // analysis result is currently cached server-side, and triggers
+  // an automatic browser download -- no separate "view" step.
+  // -----------------------------------------------------------
+
+  async function generateReport() {
+
+    if (!generateReportBtn || generateReportBtn.disabled)
+      return;
+
+    setReportBusy(true);
+
+    try {
+
+      const response = await fetch("/generate_report", {
+        method: "POST"
+      });
+
+      if (!response.ok) {
+
+        const errorBody = await response.json().catch(() => null);
+
+        const message =
+          errorBody && errorBody.message
+            ? errorBody.message
+            : "Report generation failed.";
+
+        alert(message);
+
+        setReportBusy(false);
+        return;
+
+      }
+
+      const blob = await response.blob();
+
+      // The backend already picked a filename like
+      // "ScanSense_Report_SS-20260802-001.pdf" -- read it out of
+      // the Content-Disposition header instead of guessing one
+      // here, so the two never drift apart.
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch ? filenameMatch[1] : "ScanSense_Report.pdf";
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(downloadUrl);
+
+      showActionNote("Report downloaded: " + filename);
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "Report generation error:",
+        error
+      );
+
+      alert(
+        "Report generation failed."
+      );
+
+    }
+
+    setReportBusy(false);
+
+  }
+
+
+  if (generateReportBtn) {
+
+    generateReportBtn.addEventListener(
+      "click",
+      generateReport
     );
 
   }

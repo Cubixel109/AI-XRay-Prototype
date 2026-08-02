@@ -157,6 +157,13 @@
 <div aria-hidden="true" class="confidence-bar">
 <div class="confidence-bar__fill" id="confidenceBarFill" style="width: {{ result.confidence }};"></div>
 </div>
+<button class="btn btn--secondary results-card__report-btn" disabled="" id="generateReportBtn" type="button">
+<span class="btn__spinner" hidden="" id="generateReportSpinner"></span>
+<span id="generateReportLabel">
+<svg aria-hidden="true" fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path><path d="M14 3v5h5" stroke="currentColor" stroke-linejoin="round" stroke-width="1.6"></path><path d="M9.5 17.5v-5m0 5-2-2m2 2 2-2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path></svg>
+                Generate Report
+              </span>
+</button>
 <p class="results-card__footnote">AI-assisted analysis for educational demonstration. Results should not be used as medical diagnosis.</p>
 </div>
 </div>
